@@ -7,7 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /** Formata data para exibição em pt-BR */
-export function formatDate(dateStr: string): string {
+export function formatDate(dateStr: string | undefined | null): string {
+  if (!dateStr) return '---'; // Se não houver data, não quebra o sistema
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -16,7 +17,8 @@ export function formatDate(dateStr: string): string {
 }
 
 /** Formata data com hora */
-export function formatDateTime(dateStr: string): string {
+export function formatDateTime(dateStr: string | undefined | null): string {
+  if (!dateStr) return '---';
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
