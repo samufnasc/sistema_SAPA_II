@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Save, ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { AvaliacaoAluno, Projeto, Aluno } from "@/lib/supabase";
+
+interface AvaliacaoState {
+  nota: number;
+  criterios: string;
+}
 
 export default function AvaliacaoProjetoPage() {
   const params = useParams();
@@ -13,9 +19,9 @@ export default function AvaliacaoProjetoPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [projeto, setProjeto] = useState<any>(null);
-  const [alunos, setAlunos] = useState<any[]>([]);
-  const [avaliacoes, setAvaliacoes] = useState<Record<string, { nota: number; criterios: string }>>({});
+  const [projeto, setProjeto] = useState<Projeto | null>(null);
+  const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<Record<string, AvaliacaoState>>({});
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -35,7 +41,7 @@ export default function AvaliacaoProjetoPage() {
       setAlunos(data.alunos);
 
       // Initialize avaliacoes state
-      const initialAvaliacoes: Record<string, { nota: number; criterios: string }> = {};
+      const initialAvaliacoes: Record<string, AvaliacaoState> = {};
       data.alunos.forEach((aluno: any) => {
         initialAvaliacoes[aluno.id] = {
           nota: aluno.avaliacao?.nota || 0,
@@ -65,19 +71,22 @@ export default function AvaliacaoProjetoPage() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setMessage(null);
 
     try {
       // Prepare data for submission
-      const submissionData = Object.entries(avaliacoes).map(([aluno_id, data]) => ({
-        projeto_id: params.id,
-        aluno_id,
-        nota: data.nota,
-        criterios: data.criterios,
-      }));
+      const submissionData = Object.entries(avaliacoes).map(([aluno_id, data]) => {
+        const val = data as AvaliacaoState;
+        return {
+          projeto_id: params.id as string,
+          aluno_id,
+          nota: val.nota,
+          criterios: val.criterios,
+        };
+      });
 
       // Log data before fetch as requested
       console.log("Submitting evaluation data:", submissionData);

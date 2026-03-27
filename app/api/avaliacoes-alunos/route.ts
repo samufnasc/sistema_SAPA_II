@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth"; // Assuming @ alias is configured
-import { supabase } from "@/lib/supabase";
+import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(request: Request) {
   try {
@@ -19,19 +19,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Upsert in Supabase
-    const { data, error } = await supabase
+    // Upsert in Supabase using admin client
+    const { data, error } = await supabaseAdmin
       .from("avaliacoes_alunos")
       .upsert(
         {
           projeto_id,
           aluno_id,
-          professor_id: session.user.id, // Using professor's ID from session
+          professor_id: session.user.id,
           nota,
           criterios,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "projeto_id,aluno_id,professor_id" } // Assuming this is the unique constraint
+        { onConflict: "projeto_id,aluno_id,professor_id" }
       )
       .select();
 
