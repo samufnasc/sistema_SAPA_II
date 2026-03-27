@@ -6,40 +6,58 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Formata data para exibição em pt-BR */
+/**
+ * Formata data para exibição em pt-BR.
+ * Resiliente a undefined, null e strings inválidas.
+ */
 export function formatDate(dateStr: string | undefined | null): string {
   if (!dateStr) return '---';
   try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '---';
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-    }).format(new Date(dateStr));
-  } catch { return '---'; }
+    }).format(d);
+  } catch {
+    return '---';
+  }
 }
 
-/** Formata data com hora */
+/**
+ * Formata data com hora em pt-BR.
+ * Resiliente a undefined, null e strings inválidas.
+ */
 export function formatDateTime(dateStr: string | undefined | null): string {
   if (!dateStr) return '---';
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(dateStr));
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '---';
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(d);
+  } catch {
+    return '---';
+  }
 }
 
-/** Retorna iniciais de um nome */
+/** Retorna iniciais de um nome (máx. 2 letras) */
 export function getInitials(name: string): string {
+  if (!name) return '?';
   return name
     .split(' ')
+    .filter(Boolean)
     .slice(0, 2)
     .map((n) => n[0]?.toUpperCase() ?? '')
     .join('');
 }
 
-/** Retorna o ícone/tipo de um arquivo pelo nome */
+/** Retorna o tipo de um arquivo pelo nome de extensão */
 export function getFileType(filename: string): 'pdf' | 'word' | 'foto' | 'outro' {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   if (ext === 'pdf') return 'pdf';
@@ -57,11 +75,8 @@ export function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
-/** Gera nome único para arquivo no storage */
-export function generateStoragePath(
-  folder: string,
-  filename: string
-): string {
+/** Gera caminho único para arquivo no Supabase Storage */
+export function generateStoragePath(folder: string, filename: string): string {
   const timestamp = Date.now();
   const ext = filename.split('.').pop();
   const baseName = filename

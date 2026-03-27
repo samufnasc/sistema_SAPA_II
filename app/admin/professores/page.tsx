@@ -191,7 +191,7 @@ export default function ProfessoresPage() {
                         </div>
                       </td>
                       <td className="table-td text-gray-500 dark:text-gray-400">{prof.email}</td>
-                      <td className="table-td text-gray-500 dark:text-gray-400">{formatDate(prof.created_at)}</td>
+                      <td className="table-td text-gray-500 dark:text-gray-400">{formatDate(prof.created_at || "")}</td>
                       <td className="table-td">
                         <div className="flex items-center justify-end gap-2">
                           <button

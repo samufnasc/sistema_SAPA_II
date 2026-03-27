@@ -334,7 +334,7 @@ export default function AdminAvaliacoesPage() {
 
                                 {/* Data */}
                                 <td className="table-td text-gray-400 text-xs hidden sm:table-cell">
-                                  {av.created_at ? formatDateTime(av.created_at) : "---"}
+                                  {av.created_at ? formatDateTime(av.created_at) || "" : "—"}
                                 </td>
 
                                 {/* Ação */}
