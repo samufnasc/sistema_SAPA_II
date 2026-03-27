@@ -7,50 +7,43 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 export const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 
 // ─── Interfaces sincronizadas com o banco e com as telas admin ────────────────
+// IMPORTANTE: campos opcionais usam apenas `string | undefined`, nunca `| null`,
+// pois os componentes React (FileIcon, AlunoCard, MiniAvatar, next/image)
+// só aceitam `string | undefined` em suas props — null causa erro de tipo.
 
 export interface Professor {
   id: string;
   nome: string;
   email: string;
   role: string;
-  /** URL pública da foto do professor (usada em professores/page.tsx linha ~160) */
-  foto_url?: string | null;
-  /** Data de criação — usada em formatDate() na tabela de professores */
-  created_at?: string | null;
+  foto_url?: string;
+  created_at?: string;
 }
 
 export interface Aluno {
   id: string;
   nome: string;
-  email?: string | null;
-  equipe_id?: string | null;
-  /** URL da foto 3x4 — usada no AlunoCard e no formulário de equipes */
-  foto_3x4_url?: string | null;
+  email?: string;
+  equipe_id?: string;
+  foto_3x4_url?: string;
 }
 
 export interface Equipe {
   id: string;
   nome: string;
-  descricao?: string | null;
-  created_at?: string | null;
-  /** Alunos da equipe — populados com ?with_alunos=true */
+  descricao?: string;
+  created_at?: string;
   alunos?: Aluno[];
 }
 
-/**
- * Arquivo vinculado a um projeto.
- * Exportado explicitamente para uso em projetos/page.tsx → handleDeleteArquivo()
- */
 export interface ProjetoArquivo {
   id: string;
   projeto_id: string;
-  /** Nome original do arquivo */
   nome_arquivo: string;
-  /** URL pública no Storage */
   url: string;
-  /** 'pdf' | 'word' | 'foto' | 'outro' */
-  tipo?: string | null;
-  created_at?: string | null;
+  // `tipo` é string | undefined — compatível com o prop `tipo?: string` do FileIcon
+  tipo?: string;
+  created_at?: string;
 }
 
 export interface AvaliacaoAluno {
@@ -60,22 +53,17 @@ export interface AvaliacaoAluno {
   professor_id: string;
   nota: number;
   criterios: Record<string, unknown>;
-  comentario?: string | null;
-  created_at?: string | null;
+  comentario?: string;
+  created_at?: string;
 }
 
 export interface Projeto {
   id: string;
-  /** Campo principal — antigo "nome" renomeado para "titulo" nas telas admin */
   titulo: string;
-  descricao?: string | null;
-  /** FK para a equipe responsável */
-  equipe_id?: string | null;
-  created_at?: string | null;
-  /** Relação com equipe — retornada pelo join nas APIs */
-  equipe?: Pick<Equipe, 'id' | 'nome'> | null;
-  /** Arquivos do projeto — retornados pelo join nas APIs */
+  descricao?: string;
+  equipe_id?: string;
+  created_at?: string;
+  equipe?: Pick<Equipe, 'id' | 'nome'>;
   arquivos?: ProjetoArquivo[];
-  /** Avaliações do projeto — retornadas pelo join nas APIs */
   avaliacoes?: AvaliacaoAluno[];
 }
