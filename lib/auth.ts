@@ -110,7 +110,7 @@ export const authOptions: NextAuthOptions = {
 
   // CORREÇÃO: necessário para NextAuth funcionar corretamente na Vercel
   // sem isso, getServerSession pode retornar null em produção
-  trustHost: true,
+  //trustHost: true,
 
   // Garante que os cookies sejam configurados com o domínio correto em produção
   cookies: {
