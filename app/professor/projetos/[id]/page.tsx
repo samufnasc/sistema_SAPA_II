@@ -135,7 +135,7 @@ export default function AvaliacaoProjetoPage() {
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
           </button>
-          <h1 className="text-3xl font-bold tracking-tight">{projeto?.nome || "Avaliação de Projeto"}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{projeto?.titulo || "Avaliação de Projeto"}</h1>
           <p className="text-muted-foreground">Avalie os alunos participantes deste projeto.</p>
         </div>
         <button

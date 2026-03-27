@@ -63,7 +63,7 @@ export interface Projeto {
   descricao?: string;
   equipe_id?: string;
   created_at?: string;
-  equipe?: Pick<Equipe, 'id' | 'nome'>;
+  equipe?: Pick<Equipe, 'id' | 'nome' | 'alunos'>;
   arquivos?: ProjetoArquivo[];
   avaliacoes?: AvaliacaoAluno[];
 }
