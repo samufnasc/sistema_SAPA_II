@@ -11,6 +11,23 @@ export const metadata: Metadata = {
     'Plataforma para avaliação de projetos acadêmicos por professores. Gerencie equipes, alunos, projetos e avaliações em um só lugar.',
 };
 
+/**
+ * Script anti-flicker injetado antes de qualquer renderização.
+ * Lê `localStorage.theme` e aplica a classe `dark` no <html> imediatamente,
+ * evitando o flash branco quando o usuário prefere modo escuro.
+ */
+const themeScript = `
+(function(){
+  try{
+    var t=localStorage.getItem('theme');
+    var prefersDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+    if(t==='dark'||((!t||t==='system')&&prefersDark)){
+      document.documentElement.classList.add('dark');
+    }
+  }catch(e){}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: {
@@ -18,6 +35,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        {/* Anti-flicker: aplica tema dark ANTES da hidratação do React */}
+        {/* eslint-disable-next-line react/no-danger */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={inter.className}>
         <Providers>{children}</Providers>
       </body>

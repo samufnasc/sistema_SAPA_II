@@ -149,8 +149,8 @@ export default function ProfessoresPage() {
           <Loading />
         ) : professores.length === 0 ? (
           <div className="card text-center py-16">
-            <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Nenhum professor encontrado</p>
+            <GraduationCap className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400 font-medium">Nenhum professor encontrado</p>
             <p className="text-sm text-gray-400 mt-1">
               {search ? 'Tente outro termo de busca.' : 'Clique em "Adicionar Professor" para começar.'}
             </p>
@@ -167,12 +167,12 @@ export default function ProfessoresPage() {
                     <th className="table-th text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {professores.map((prof) => (
                     <tr key={prof.id} className="table-row">
                       <td className="table-td">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center overflow-hidden flex-shrink-0">
                             {prof.foto_url ? (
                               <Image
                                 src={prof.foto_url}
@@ -182,16 +182,16 @@ export default function ProfessoresPage() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <span className="text-xs font-bold text-primary-700">
+                              <span className="text-xs font-bold text-primary-700 dark:text-primary-300">
                                 {getInitials(prof.nome)}
                               </span>
                             )}
                           </div>
-                          <span className="font-medium text-gray-900">{prof.nome}</span>
+                          <span className="font-medium text-slate-900 dark:text-white">{prof.nome}</span>
                         </div>
                       </td>
-                      <td className="table-td text-gray-500">{prof.email}</td>
-                      <td className="table-td text-gray-500">{formatDate(prof.created_at)}</td>
+                      <td className="table-td text-gray-500 dark:text-gray-400">{prof.email}</td>
+                      <td className="table-td text-gray-500 dark:text-gray-400">{formatDate(prof.created_at)}</td>
                       <td className="table-td">
                         <div className="flex items-center justify-end gap-2">
                           <button

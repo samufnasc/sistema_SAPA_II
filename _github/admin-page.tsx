@@ -137,12 +137,11 @@ export default function AdminDashboard() {
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {data.ultimosProjetos.map((p) => (
                     <tr key={p.id} className="table-row">
-                      {/* Título — força branco no dark para máximo contraste */}
-                      <td className="table-td font-semibold text-slate-900 dark:text-white">{p.titulo}</td>
-                      <td className="table-td text-gray-600 dark:text-gray-300">{p.equipe?.nome ?? '—'}</td>
-                      <td className="table-td text-gray-500 dark:text-gray-400">{formatDate(p.created_at)}</td>
+                      <td className="table-td font-medium text-gray-900 dark:text-gray-100">{p.titulo}</td>
+                      <td className="table-td">{p.equipe?.nome ?? '—'}</td>
+                      <td className="table-td">{formatDate(p.created_at)}</td>
                       <td className="table-td">
-                        <Link href="/admin/projetos" className="text-primary-700 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 text-sm font-medium">
+                        <Link href="/admin/projetos" className="text-primary-700 dark:text-primary-400 hover:text-primary-900 text-sm font-medium">
                           Ver detalhes
                         </Link>
                       </td>

@@ -1,4 +1,4 @@
-# 🎓 AvaliaProj v2 — Sistema de Avaliação de Projetos Acadêmicos (SAPA II)
+# 🎓 AvaliaProj v2.1 — Sistema de Avaliação de Projetos Acadêmicos
 
 > Sistema web completo para avaliação **individual por aluno** de projetos acadêmicos.
 > Administradores cadastram professores, equipes e projetos. Professores fazem login
@@ -7,7 +7,18 @@
 
 ---
 
-## 🆕 Novidades v2
+## 🆕 Novidades v2.1
+
+| Funcionalidade | Descrição |
+|---|---|
+| 🌙 **Dark Mode login** | Tela de login totalmente adaptada ao modo escuro (`bg-slate-900`, inputs dark) |
+| 🎨 **Contraste admin** | Títulos e nomes em tabelas usam `text-slate-900 dark:text-white` em todo o painel |
+| 💾 **Notas persistidas** | API salva `nota_conteudo`, `nota_apresentacao`, `nota_inovacao`, `nota_metodologia`, `nota_resultados` como colunas DECIMAL(3,1) |
+| ⚡ **Sem flicker** | Script anti-flicker injetado no `<head>` aplica tema dark antes da hidratação React |
+| 🖼️ **Foto persiste** | Foto do professor cacheada via `sessionStorage` — visível imediatamente após refresh |
+| 🔧 **Build fix** | `Array.from(new Map(...).values())` substitui spread de iterador em `/admin/avaliacoes` |
+
+## 🆕 Novidades v2.0
 
 | Funcionalidade | Descrição |
 |---|---|

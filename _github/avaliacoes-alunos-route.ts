@@ -5,16 +5,9 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 /**
  * GET  /api/avaliacoes-alunos
- *   ?projeto_id=xxx               → avaliações de um projeto (todos alunos)
- *   ?aluno_id=xxx&projeto_id=xxx  → avaliações de um aluno num projeto
- *   ?professor_id=xxx             → todas as avaliações de um professor
- *   sem filtro + role=admin       → todas as avaliações
- *
  * POST /api/avaliacoes-alunos
- *   Body: { projeto_id, aluno_id, criterios, comentario }
- *   Faz upsert pela tripla (projeto_id, aluno_id, professor_id)
  *
- * NOTA: getServerSession importado de 'next-auth/next' (não 'next-auth')
+ * CORREÇÃO 401: getServerSession importado de 'next-auth/next' (não 'next-auth')
  * para funcionar corretamente no App Router da Vercel.
  */
 
@@ -55,11 +48,9 @@ export async function GET(req: NextRequest) {
 
 // ─── POST (upsert) ────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  // ── 1. Validação de sessão ─────────────────────────────────────────────────
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    console.error('[avaliacoes-alunos POST] Sessão não encontrada — verifique NEXTAUTH_SECRET e NEXTAUTH_URL.');
     return NextResponse.json(
       { error: 'Sessão não encontrada. Faça login novamente.' },
       { status: 401 }
@@ -67,14 +58,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (session.user.role !== 'professor') {
-    console.error('[avaliacoes-alunos POST] Role inválida:', session.user.role);
     return NextResponse.json(
       { error: 'Apenas professores podem enviar avaliações.' },
       { status: 403 }
     );
   }
 
-  // ── 2. Parse do body ───────────────────────────────────────────────────────
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -96,7 +85,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── 3. Busca professor pelo user_id da sessão ──────────────────────────────
+  // Busca professor pelo user_id da sessão
   const { data: professor, error: profError } = await supabaseAdmin
     .from('professores')
     .select('id')
@@ -104,14 +93,14 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (profError || !professor) {
-    console.error('[avaliacoes-alunos POST] Professor não encontrado para user_id:', session.user.id, profError);
+    console.error('[avaliacoes-alunos] Professor não encontrado para user_id:', session.user.id, profError);
     return NextResponse.json(
       { error: 'Professor não encontrado. Verifique o vínculo entre usuário e professor.' },
       { status: 404 }
     );
   }
 
-  // ── 4. Normaliza critérios (step 0.1, range 0–10) ─────────────────────────
+  // Valida e normaliza critérios (step 0.1, range 0–10)
   const crit = {
     conteudo:     Math.round(Math.min(10, Math.max(0, Number(criterios.conteudo)))     * 10) / 10,
     apresentacao: Math.round(Math.min(10, Math.max(0, Number(criterios.apresentacao))) * 10) / 10,
@@ -121,23 +110,12 @@ export async function POST(req: NextRequest) {
   };
 
   const nota = parseFloat(
-    ((crit.conteudo + crit.apresentacao + crit.inovacao + crit.metodologia + crit.resultados) / 5)
-      .toFixed(2)
+    (
+      (crit.conteudo + crit.apresentacao + crit.inovacao + crit.metodologia + crit.resultados) / 5
+    ).toFixed(2)
   );
 
-  // ── 5. Payload: colunas individuais DECIMAL(3,1) + JSONB criterios + nota ──
-  const payload = {
-    nota_conteudo:     crit.conteudo,
-    nota_apresentacao: crit.apresentacao,
-    nota_inovacao:     crit.inovacao,
-    nota_metodologia:  crit.metodologia,
-    nota_resultados:   crit.resultados,
-    criterios:         crit,
-    nota,
-    comentario: comentario ?? null,
-  };
-
-  // ── 6. Upsert: atualiza ou cria ────────────────────────────────────────────
+  // Verifica avaliação existente para este (projeto, aluno, professor)
   const { data: existing } = await supabaseAdmin
     .from('avaliacao_alunos')
     .select('id')
@@ -147,28 +125,42 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (existing) {
+    // Atualiza
     const { data, error } = await supabaseAdmin
       .from('avaliacao_alunos')
-      .update({ ...payload, updated_at: new Date().toISOString() })
+      .update({
+        criterios: crit,
+        nota,
+        comentario: comentario ?? null,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', existing.id)
       .select('*')
       .single();
 
     if (error) {
-      console.error('[avaliacoes-alunos POST] Erro ao atualizar:', error);
+      console.error('[avaliacoes-alunos] Erro ao atualizar:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(data);
   }
 
+  // Cria nova avaliação
   const { data, error } = await supabaseAdmin
     .from('avaliacao_alunos')
-    .insert({ projeto_id, aluno_id, professor_id: professor.id, ...payload })
+    .insert({
+      projeto_id,
+      aluno_id,
+      professor_id: professor.id,
+      criterios: crit,
+      nota,
+      comentario: comentario ?? null,
+    })
     .select('*')
     .single();
 
   if (error) {
-    console.error('[avaliacoes-alunos POST] Erro ao inserir:', error);
+    console.error('[avaliacoes-alunos] Erro ao inserir:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json(data, { status: 201 });

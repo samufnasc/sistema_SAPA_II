@@ -79,17 +79,23 @@ CREATE TABLE IF NOT EXISTS avaliacoes (
 -- Cada professor avalia cada aluno individualmente em cada projeto.
 -- A tripla (projeto_id, aluno_id, professor_id) é única.
 CREATE TABLE IF NOT EXISTS avaliacao_alunos (
-  id           UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
-  projeto_id   UUID           NOT NULL REFERENCES projetos(id)    ON DELETE CASCADE,
-  aluno_id     UUID           NOT NULL REFERENCES alunos(id)      ON DELETE CASCADE,
-  professor_id UUID           NOT NULL REFERENCES professores(id) ON DELETE CASCADE,
-  nota         DECIMAL(4, 2)  NOT NULL CHECK (nota >= 0 AND nota <= 10),
-  comentario   TEXT,
-  -- JSONB com os 5 eixos: conteudo, apresentacao, inovacao, metodologia, resultados
-  -- Cada valor: DECIMAL(4,2) entre 0 e 10, step 0.1
-  criterios    JSONB          NOT NULL DEFAULT '{}',
-  created_at   TIMESTAMPTZ    DEFAULT NOW(),
-  updated_at   TIMESTAMPTZ    DEFAULT NOW(),
+  id                 UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+  projeto_id         UUID           NOT NULL REFERENCES projetos(id)    ON DELETE CASCADE,
+  aluno_id           UUID           NOT NULL REFERENCES alunos(id)      ON DELETE CASCADE,
+  professor_id       UUID           NOT NULL REFERENCES professores(id) ON DELETE CASCADE,
+  -- Notas individuais por eixo (DECIMAL 0–10, step 0.1)
+  nota_conteudo      DECIMAL(3, 1)  CHECK (nota_conteudo     >= 0 AND nota_conteudo     <= 10),
+  nota_apresentacao  DECIMAL(3, 1)  CHECK (nota_apresentacao >= 0 AND nota_apresentacao <= 10),
+  nota_inovacao      DECIMAL(3, 1)  CHECK (nota_inovacao     >= 0 AND nota_inovacao     <= 10),
+  nota_metodologia   DECIMAL(3, 1)  CHECK (nota_metodologia  >= 0 AND nota_metodologia  <= 10),
+  nota_resultados    DECIMAL(3, 1)  CHECK (nota_resultados   >= 0 AND nota_resultados   <= 10),
+  -- Média calculada automaticamente pelo backend
+  nota               DECIMAL(4, 2)  NOT NULL CHECK (nota >= 0 AND nota <= 10),
+  comentario         TEXT,
+  -- JSONB redundante para queries/display rápido (espelho das notas individuais)
+  criterios          JSONB          NOT NULL DEFAULT '{}',
+  created_at         TIMESTAMPTZ    DEFAULT NOW(),
+  updated_at         TIMESTAMPTZ    DEFAULT NOW(),
   UNIQUE (projeto_id, aluno_id, professor_id)
 );
 
@@ -131,6 +137,11 @@ VALUES (
 -- 2. Bucket: "professores" — Public: true
 -- 3. Bucket: "alunos"      — Public: true
 
--- ─── Se já tem a tabela avaliacoes e está migrando ───────────────────────────
--- Execute apenas se necessário:
+-- ─── Se já tem a tabela avaliacao_alunos e está migrando para v2.1 ──────────
+-- Execute apenas se a tabela já existia sem as colunas individuais:
+-- ALTER TABLE avaliacao_alunos ADD COLUMN IF NOT EXISTS nota_conteudo     DECIMAL(3,1);
+-- ALTER TABLE avaliacao_alunos ADD COLUMN IF NOT EXISTS nota_apresentacao DECIMAL(3,1);
+-- ALTER TABLE avaliacao_alunos ADD COLUMN IF NOT EXISTS nota_inovacao     DECIMAL(3,1);
+-- ALTER TABLE avaliacao_alunos ADD COLUMN IF NOT EXISTS nota_metodologia  DECIMAL(3,1);
+-- ALTER TABLE avaliacao_alunos ADD COLUMN IF NOT EXISTS nota_resultados   DECIMAL(3,1);
 -- ALTER TABLE avaliacao_alunos ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();

@@ -242,10 +242,12 @@ export default function AdminAvaliacoesPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="hidden sm:flex items-center gap-1">
-                        {Array.from(new Map(grupo.avaliacoes.map((a) => [a.professor?.id, a.professor])).values())
-  .filter(Boolean)
-  .slice(0, 3)
-  .map((prof: any) => (
+                        {Array.from(
+                          new Map(grupo.avaliacoes.map((a) => [a.professor?.id, a.professor])).values()
+                        )
+                          .filter(Boolean)
+                          .slice(0, 3)
+                          .map((prof) => (
                             <MiniAvatar key={prof!.id} nome={prof!.nome} fotoUrl={prof!.foto_url} />
                           ))}
                       </div>

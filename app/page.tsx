@@ -57,7 +57,9 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800
+                    dark:from-gray-950 dark:via-slate-900 dark:to-gray-900
+                    flex items-center justify-center p-4 transition-colors duration-300">
       {/* Background decorativo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-700/20 rounded-full blur-3xl" />
@@ -72,22 +74,23 @@ export default function HomePage() {
             <BookOpen className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white">AvaliaProj</h1>
-          <p className="text-primary-200 mt-2 text-sm">
+          <p className="text-primary-200 dark:text-slate-400 mt-2 text-sm">
             Sistema de Avaliação de Projetos Acadêmicos
           </p>
         </div>
 
         {/* Card de login */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl dark:shadow-black/40 p-8
+                        border border-transparent dark:border-slate-700 transition-colors duration-300">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Bem-vindo(a)!</h2>
-            <p className="text-sm text-gray-500 mt-1">Faça login para acessar o sistema</p>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Bem-vindo(a)!</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Faça login para acessar o sistema</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 E-mail
               </label>
               <input
@@ -95,15 +98,20 @@ export default function HomePage() {
                 type="email"
                 autoComplete="email"
                 placeholder="seu@email.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400 transition-shadow"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm
+                           bg-white dark:bg-slate-800
+                           text-slate-900 dark:text-slate-100
+                           placeholder:text-gray-400 dark:placeholder:text-slate-500
+                           focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent
+                           transition-all duration-200"
                 {...register('email')}
               />
-              {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{errors.email.message}</p>}
             </div>
 
             {/* Senha */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Senha
               </label>
               <div className="relative">
@@ -112,26 +120,35 @@ export default function HomePage() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400 transition-shadow"
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-slate-600 rounded-lg text-sm
+                             bg-white dark:bg-slate-800
+                             text-slate-900 dark:text-slate-100
+                             placeholder:text-gray-400 dark:placeholder:text-slate-500
+                             focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent
+                             transition-all duration-200"
                   {...register('password')}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
+              {errors.password && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{errors.password.message}</p>}
             </div>
 
             {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 text-base inline-flex items-center justify-center gap-2 bg-primary-800 text-white font-medium rounded-lg hover:bg-primary-700 active:bg-primary-900 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 text-base inline-flex items-center justify-center gap-2
+                         bg-primary-800 dark:bg-primary-600 text-white font-medium rounded-lg
+                         hover:bg-primary-700 dark:hover:bg-primary-500
+                         active:bg-primary-900 dark:active:bg-primary-700
+                         transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -145,28 +162,28 @@ export default function HomePage() {
           </form>
 
           {/* Info de papéis */}
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <p className="text-xs text-gray-400 text-center mb-3">Tipos de acesso</p>
+          <div className="mt-6 pt-5 border-t border-gray-100 dark:border-slate-700">
+            <p className="text-xs text-gray-400 dark:text-slate-500 text-center mb-3">Tipos de acesso</p>
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                <ShieldCheck className="w-4 h-4 text-primary-800 flex-shrink-0" />
+              <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-primary-900/30 rounded-lg border border-transparent dark:border-primary-800/40">
+                <ShieldCheck className="w-4 h-4 text-primary-800 dark:text-primary-400 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-primary-800">Administrador</p>
-                  <p className="text-xs text-gray-500">Gerencia tudo</p>
+                  <p className="text-xs font-semibold text-primary-800 dark:text-primary-300">Administrador</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-500">Gerencia tudo</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                <GraduationCap className="w-4 h-4 text-green-700 flex-shrink-0" />
+              <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-transparent dark:border-green-800/30">
+                <GraduationCap className="w-4 h-4 text-green-700 dark:text-green-400 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-green-700">Professor</p>
-                  <p className="text-xs text-gray-500">Avalia projetos</p>
+                  <p className="text-xs font-semibold text-green-700 dark:text-green-400">Professor</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-500">Avalia projetos</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <p className="text-center text-primary-300 text-xs mt-6">
+        <p className="text-center text-primary-300 dark:text-slate-500 text-xs mt-6">
           © {new Date().getFullYear()} AvaliaProj — Todos os direitos reservados
         </p>
       </div>

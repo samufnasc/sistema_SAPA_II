@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import Image from 'next/image';
 import { getInitials } from '@/lib/utils';
 import type { Professor } from '@/lib/supabase';
@@ -13,14 +13,19 @@ interface HeaderProps {
   subtitle?: string;
 }
 
-/** Botão de alternância de tema (light / dark / system) */
+const FOTO_CACHE_KEY = 'avalia_prof_foto_url';
+
+/** Botão de alternância de tema (light / dark) */
 function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Evita hydration mismatch
+  // Evita hydration mismatch — só renderiza após mount
   useEffect(() => setMounted(true), []);
-  if (!mounted) return <div className="w-9 h-9" />;
+  if (!mounted) {
+    // Placeholder do mesmo tamanho para evitar layout shift
+    return <div className="w-9 h-9 rounded-lg flex-shrink-0" aria-hidden="true" />;
+  }
 
   const isDark = resolvedTheme === 'dark';
 
@@ -31,7 +36,7 @@ function ThemeToggle() {
       className="w-9 h-9 rounded-lg flex items-center justify-center
                  bg-gray-100 hover:bg-gray-200 text-gray-600
                  dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300
-                 transition-colors duration-200"
+                 transition-colors duration-200 flex-shrink-0"
     >
       {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
     </button>
@@ -39,37 +44,48 @@ function ThemeToggle() {
 }
 
 export function Header({ title, subtitle }: HeaderProps) {
-  const { data: session } = useSession();
-  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
-  const [loadingFoto, setLoadingFoto] = useState(false);
+  const { data: session, status } = useSession();
 
-  // Busca a foto do usuário logado (professor ou admin)
+  // Inicializa com cache do sessionStorage para evitar flicker pós-refresh
+  const [fotoUrl, setFotoUrl] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem(FOTO_CACHE_KEY);
+  });
+
   useEffect(() => {
-    if (!session?.user?.email) return;
+    // Só busca quando a sessão estiver carregada e for professor
+    if (status !== 'authenticated' || !session?.user?.email) return;
+    if (session.user.role !== 'professor') {
+      // Admin: limpa cache de foto
+      sessionStorage.removeItem(FOTO_CACHE_KEY);
+      setFotoUrl(null);
+      return;
+    }
 
     const fetchFoto = async () => {
-      setLoadingFoto(true);
       try {
-        if (session.user.role === 'professor') {
-          const res = await fetch('/api/professores');
-          const list = await res.json();
-          if (Array.isArray(list)) {
-            const myProf = list.find(
-              (p: Professor) => p.email === session.user.email
-            );
-            setFotoUrl(myProf?.foto_url ?? null);
+        const res = await fetch('/api/professores');
+        const list = await res.json();
+        if (Array.isArray(list)) {
+          const myProf = list.find(
+            (p: Professor) => p.email === session.user.email
+          );
+          const url = myProf?.foto_url ?? null;
+          setFotoUrl(url);
+          // Persiste no sessionStorage para sobreviver a navegações na mesma aba
+          if (url) {
+            sessionStorage.setItem(FOTO_CACHE_KEY, url);
+          } else {
+            sessionStorage.removeItem(FOTO_CACHE_KEY);
           }
         }
-        // Admin: pode expandir futuramente para buscar foto do admin
       } catch {
-        // silencia erro de foto
-      } finally {
-        setLoadingFoto(false);
+        // silencia erro de foto — o avatar de iniciais será exibido
       }
     };
 
     fetchFoto();
-  }, [session]);
+  }, [session, status]);
 
   const userName = session?.user?.name ?? 'Usuário';
   const userRole = session?.user?.role ?? '';
@@ -90,7 +106,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         <ThemeToggle />
 
         {/* Separador */}
-        <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+        <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
 
         {/* Avatar + nome */}
         <div className="flex items-center gap-2.5">
@@ -102,6 +118,8 @@ export function Header({ title, subtitle }: HeaderProps) {
                 width={36}
                 height={36}
                 className="w-full h-full object-cover"
+                // Prioridade alta — ícone sempre visível no header
+                priority
               />
             ) : (
               <div className="w-full h-full bg-primary-100 dark:bg-primary-900/60 flex items-center justify-center">
@@ -112,7 +130,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             )}
           </div>
           <div className="hidden sm:block text-right">
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white leading-none">
               {userName}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 capitalize mt-0.5">

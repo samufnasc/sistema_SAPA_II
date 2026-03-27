@@ -211,8 +211,8 @@ export default function ProjetosPage() {
           <Loading />
         ) : projetos.length === 0 ? (
           <div className="card text-center py-16">
-            <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Nenhum projeto encontrado</p>
+            <FolderOpen className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400 font-medium">Nenhum projeto encontrado</p>
           </div>
         ) : (
           <div className="card p-0 overflow-hidden">
@@ -228,27 +228,27 @@ export default function ProjetosPage() {
                     <th className="table-th text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {projetos.map((projeto) => (
                     <tr key={projeto.id} className="table-row">
                       <td className="table-td">
                         <button
                           onClick={() => openDetail(projeto)}
-                          className="font-medium text-gray-900 hover:text-primary-700 text-left"
+                          className="font-medium text-slate-900 dark:text-white hover:text-primary-700 dark:hover:text-primary-400 text-left"
                         >
                           {projeto.titulo}
                         </button>
                         {projeto.descricao && (
-                          <p className="text-xs text-gray-400 truncate max-w-[200px]">{projeto.descricao}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[200px]">{projeto.descricao}</p>
                         )}
                       </td>
                       <td className="table-td">
                         {projeto.equipe ? (
-                          <span className="flex items-center gap-1 text-sm">
-                            <Users className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-200">
+                            <Users className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                             {projeto.equipe.nome}
                           </span>
-                        ) : '—'}
+                        ) : <span className="text-gray-400 dark:text-gray-500">—</span>}
                       </td>
                       <td className="table-td">
                         <span className="badge-blue">
@@ -256,12 +256,12 @@ export default function ProjetosPage() {
                         </span>
                       </td>
                       <td className="table-td">
-                        <span className="flex items-center gap-1 text-sm">
-                          <ClipboardCheck className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-200">
+                          <ClipboardCheck className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                           {projeto.avaliacoes?.length ?? 0}
                         </span>
                       </td>
-                      <td className="table-td text-gray-500">{formatDate(projeto.created_at)}</td>
+                      <td className="table-td text-gray-500 dark:text-gray-400">{formatDate(projeto.created_at)}</td>
                       <td className="table-td">
                         <div className="flex items-center justify-end gap-2">
                           <button onClick={() => openEdit(projeto)} className="btn-secondary btn-sm">
@@ -370,26 +370,26 @@ export default function ProjetosPage() {
           <div className="space-y-5">
             {selectedProjeto.descricao && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Descrição</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedProjeto.descricao}</p>
+                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Descrição</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{selectedProjeto.descricao}</p>
               </div>
             )}
 
             {selectedProjeto.equipe && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Equipe</p>
-                <p className="font-medium text-gray-900">{selectedProjeto.equipe.nome}</p>
+                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Equipe</p>
+                <p className="font-medium text-slate-900 dark:text-white">{selectedProjeto.equipe.nome}</p>
               </div>
             )}
 
             {selectedProjeto.arquivos && selectedProjeto.arquivos.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Arquivos</p>
+                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">Arquivos</p>
                 <div className="space-y-2">
                   {selectedProjeto.arquivos.map((arq) => (
-                    <div key={arq.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div key={arq.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
                       <FileIcon tipo={arq.tipo} />
-                      <span className="flex-1 text-sm text-gray-700 truncate">{arq.nome_arquivo}</span>
+                      <span className="flex-1 text-sm text-gray-700 dark:text-gray-200 truncate">{arq.nome_arquivo}</span>
                       <a href={arq.url} target="_blank" rel="noopener noreferrer"
                         className="text-primary-600 hover:text-primary-800 transition-colors"
                         title="Baixar arquivo"
@@ -411,20 +411,20 @@ export default function ProjetosPage() {
 
             {selectedProjeto.avaliacoes && selectedProjeto.avaliacoes.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">
                   Avaliações ({selectedProjeto.avaliacoes.length})
                 </p>
                 <div className="space-y-2">
                   {selectedProjeto.avaliacoes.map((av) => (
-                    <div key={av.id} className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div key={av.id} className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 rounded-lg">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-800">
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                           {(av as any).professor?.nome ?? 'Professor'}
                         </span>
-                        <span className="font-bold text-green-700">{av.nota}/10</span>
+                        <span className="font-bold text-green-700 dark:text-green-400">{av.nota}/10</span>
                       </div>
                       {av.comentario && (
-                        <p className="text-xs text-gray-500 mt-1">{av.comentario}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{av.comentario}</p>
                       )}
                     </div>
                   ))}

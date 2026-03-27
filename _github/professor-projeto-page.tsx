@@ -350,6 +350,7 @@ export default function ProjetoDetailPage() {
       const res = await fetch('/api/avaliacoes-alunos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 

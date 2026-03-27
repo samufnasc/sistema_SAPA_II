@@ -107,11 +107,25 @@ export const authOptions: NextAuthOptions = {
   },
 
   secret: process.env.NEXTAUTH_SECRET,
-  
-  // ✅ Adicione esta linha para garantir o funcionamento na Vercel
-  // Se o TypeScript reclamar, podemos usar @ts-ignore apenas nesta linha
-  // @ts-ignore
-  trustHost: true,
+
+  // CORREÇÃO: necessário para NextAuth funcionar corretamente na Vercel
+  // sem isso, getServerSession pode retornar null em produção
+  //trustHost: true,
+
+  // Garante que os cookies sejam configurados com o domínio correto em produção
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
 };
 
 // ─── Utilitário: hash de senha ─────────────────────────────────────────────

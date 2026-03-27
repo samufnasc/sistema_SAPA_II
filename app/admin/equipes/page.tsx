@@ -160,8 +160,8 @@ export default function EquipesPage() {
           <Loading />
         ) : equipes.length === 0 ? (
           <div className="card text-center py-16">
-            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Nenhuma equipe encontrada</p>
+            <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400 font-medium">Nenhuma equipe encontrada</p>
             <p className="text-sm text-gray-400 mt-1">
               {search ? 'Tente outro termo.' : 'Clique em "Nova Equipe" para cadastrar.'}
             </p>
@@ -176,16 +176,16 @@ export default function EquipesPage() {
                 <div key={equipe.id} className="card p-0 overflow-hidden">
                   {/* Header da equipe */}
                   <div
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
                     onClick={() => setExpandedId(isExpanded ? null : equipe.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-                        <Users className="w-5 h-5 text-primary-700" />
+                      <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/40 rounded-xl flex items-center justify-center">
+                        <Users className="w-5 h-5 text-primary-700 dark:text-primary-400" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900">{equipe.nome}</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="font-semibold text-slate-900 dark:text-white">{equipe.nome}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           {totalAlunos} {totalAlunos === 1 ? 'aluno' : 'alunos'}
                           {equipe.descricao && ` · ${equipe.descricao}`}
                         </p>
@@ -218,7 +218,7 @@ export default function EquipesPage() {
 
                   {/* Alunos (expandível) */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50">
+                    <div className="px-4 pb-4 pt-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30">
                       {equipe.alunos && equipe.alunos.length > 0 ? (
                         <div className="flex flex-wrap gap-4 pt-2">
                           {equipe.alunos.map((aluno) => (
@@ -226,7 +226,7 @@ export default function EquipesPage() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-400 text-center py-4">
+                        <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
                           Nenhum aluno nesta equipe.
                         </p>
                       )}
