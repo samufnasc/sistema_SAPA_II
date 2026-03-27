@@ -8,12 +8,14 @@ export function cn(...inputs: ClassValue[]) {
 
 /** Formata data para exibição em pt-BR */
 export function formatDate(dateStr: string | undefined | null): string {
-  if (!dateStr) return '---'; // Se não houver data, não quebra o sistema
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(dateStr));
+  if (!dateStr) return '---';
+  try {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date(dateStr));
+  } catch { return '---'; }
 }
 
 /** Formata data com hora */

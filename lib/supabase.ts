@@ -21,6 +21,7 @@ export interface Projeto {
   id: string;
   nome: string;
   descricao?: string;
+  created_at?: string;
 }
 
 export interface Aluno {
@@ -44,5 +45,6 @@ export interface Professor {
   nome: string;
   email: string;
   role: string;
-  foto_url?: string; // ADICIONADO PARA RESOLVER O ERRO ATUAL
+  foto_url?: string;
+  created_at?: string; // ISTO RESOLVE O ERRO DA LINHA 194
 }
