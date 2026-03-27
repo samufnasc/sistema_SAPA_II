@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { Save, ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function AvaliacaoProjetoPage() {
