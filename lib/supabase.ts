@@ -1,11 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+// Cliente para uso geral
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Cliente administrativo (garanta que a chave no .env seja a Service Role)
+export const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 
 export interface AvaliacaoAluno {
   id?: string;
@@ -14,11 +16,13 @@ export interface AvaliacaoAluno {
   professor_id: string;
   nota: number;
   criterios: any;
+  comentario?: string; // Necessário para a linha 330
+  created_at?: string; // Necessário para a linha 337
 }
 
 export interface Projeto {
   id: string;
-  nome: string; // Mudamos de 'titulo' para 'nome' para casar com seu componente
+  nome: string;
   descricao?: string;
 }
 
@@ -26,12 +30,4 @@ export interface Aluno {
   id: string;
   nome: string;
   email: string;
-}
-
-// Faltava este export para o seu Dashboard!
-export interface Professor {
-  id: string;
-  nome: string;
-  email: string;
-  role: string;
 }

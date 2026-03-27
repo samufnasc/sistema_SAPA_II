@@ -86,6 +86,10 @@ export default function AdminAvaliacoesPage() {
     const nomeProjeto = av.projeto?.titulo ?? 'projeto';
     if (!confirm(`Excluir avaliação de "${nomeAluno}" no projeto "${nomeProjeto}"?`)) return;
 
+    if (!av.id) {
+  toast.error("ID da avaliação não encontrado.");
+  return;
+}
     setDeletingId(av.id);
     try {
       const res = await fetch(`/api/avaliacoes-alunos/${av.id}`, { method: 'DELETE' });
@@ -330,7 +334,7 @@ export default function AdminAvaliacoesPage() {
 
                                 {/* Data */}
                                 <td className="table-td text-gray-400 text-xs hidden sm:table-cell">
-                                  {formatDateTime(av.created_at)}
+                                  {av.created_at ? formatDateTime(av.created_at) : "---"}
                                 </td>
 
                                 {/* Ação */}
