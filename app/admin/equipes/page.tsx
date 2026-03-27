@@ -13,7 +13,7 @@ import { Modal } from '@/components/Modal';
 import { Loading } from '@/components/Loading';
 import { AlunoCard } from '@/components/AlunoCard';
 import { formatDate } from '@/lib/utils';
-import type { Equipe } from '@/lib/supabase';
+import { Equipe } from '@/lib/supabase';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 const alunoSchema = z.object({

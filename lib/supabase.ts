@@ -31,6 +31,7 @@ export interface Aluno {
   foto_3x4_url?: string;
 }
 
+// ESTA É A PARTE QUE FALTA NO SEU REPOSITÓRIO
 export interface Equipe {
   id: string;
   nome: string;
