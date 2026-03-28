@@ -1,203 +1,317 @@
-"use client";
+'use client';
 
-import { useState, useEffect, FormEvent } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { motion } from "framer-motion";
-import { Save, ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
-import { AvaliacaoAluno, Projeto, Aluno } from "@/lib/supabase";
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { Save, ArrowLeft, Loader2, AlertCircle, Users, FileText } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Loading } from '@/components/Loading';
+import { formatDate } from '@/lib/utils';
+import type { Projeto, Aluno } from '@/lib/supabase';
 
+// ─── Tipos locais ─────────────────────────────────────────────────────────────
 interface AvaliacaoState {
   nota: number;
   criterios: string;
 }
 
+// ─── Componente de nota com slider visual ─────────────────────────────────────
+function NotaInput({
+  alunoId,
+  nota,
+  onChange,
+}: {
+  alunoId: string;
+  nota: number;
+  onChange: (id: string, nota: number) => void;
+}) {
+  const cor =
+    nota >= 8
+      ? 'text-green-600 dark:text-green-400'
+      : nota >= 5
+      ? 'text-yellow-600 dark:text-yellow-400'
+      : 'text-red-600 dark:text-red-400';
+
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        type="range"
+        min={0}
+        max={10}
+        step={0.5}
+        value={nota}
+        onChange={(e) => onChange(alunoId, parseFloat(e.target.value))}
+        className="w-32 accent-primary-700"
+      />
+      <input
+        type="number"
+        min={0}
+        max={10}
+        step={0.1}
+        value={nota}
+        onChange={(e) => {
+          const v = Math.min(10, Math.max(0, parseFloat(e.target.value) || 0));
+          onChange(alunoId, v);
+        }}
+        className={`w-16 px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-lg
+                    text-sm font-bold text-center bg-white dark:bg-slate-800 ${cor}
+                    focus:outline-none focus:ring-2 focus:ring-primary-500`}
+      />
+      <span className="text-sm text-gray-400">/10</span>
+    </div>
+  );
+}
+
+// ─── Página principal ─────────────────────────────────────────────────────────
 export default function AvaliacaoProjetoPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session, status } = useSession();
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [projeto, setProjeto] = useState<Projeto | null>(null);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<Record<string, AvaliacaoState>>({});
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated") {
-      fetchProjetoData();
-    }
-  }, [status, params.id]);
-
-  const fetchProjetoData = async () => {
+  // ─── Buscar dados ──────────────────────────────────────────────────────────
+  const fetchProjeto = useCallback(async () => {
     try {
       setLoading(true);
-      // Fetch projeto and alunos (assuming these endpoints exist)
       const res = await fetch(`/api/projetos/${params.id}`);
-      const data = await res.json();
-      setProjeto(data.projeto);
-      setAlunos(data.alunos);
 
-      // Initialize avaliacoes state
-      const initialAvaliacoes: Record<string, AvaliacaoState> = {};
-      data.alunos.forEach((aluno: any) => {
-        initialAvaliacoes[aluno.id] = {
-          nota: aluno.avaliacao?.nota || 0,
-          criterios: aluno.avaliacao?.criterios || "",
+      if (!res.ok) {
+        toast.error('Projeto não encontrado.');
+        router.push('/professor');
+        return;
+      }
+
+      // A API retorna o projeto diretamente (não em { projeto: ... })
+      // com equipe: { id, nome, alunos: [...] }
+      const data: Projeto = await res.json();
+      setProjeto(data);
+
+      const listaAlunos: Aluno[] = data.equipe?.alunos ?? [];
+      setAlunos(listaAlunos);
+
+      // Pré-preenche notas se o professor já avaliou
+      const initial: Record<string, AvaliacaoState> = {};
+      listaAlunos.forEach((aluno) => {
+        const avExistente = (data.avaliacoes ?? []).find(
+          (av) => av.aluno_id === aluno.id && av.professor_id === session?.user?.id
+        );
+        initial[aluno.id] = {
+          nota: avExistente?.nota ?? 0,
+          criterios:
+            typeof avExistente?.criterios === 'string'
+              ? avExistente.criterios
+              : avExistente?.criterios
+              ? JSON.stringify(avExistente.criterios)
+              : '',
         };
       });
-      setAvaliacoes(initialAvaliacoes);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setMessage({ type: "error", text: "Falha ao carregar dados do projeto." });
+      setAvaliacoes(initial);
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao carregar dados do projeto.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, session?.user?.id, router]);
 
-  const handleNotaChange = (alunoId: string, nota: number) => {
-    setAvaliacoes((prev) => ({
-      ...prev,
-      [alunoId]: { ...prev[alunoId], nota },
-    }));
-  };
+  useEffect(() => {
+    if (status === 'unauthenticated') { router.push('/'); return; }
+    if (status === 'authenticated') fetchProjeto();
+  }, [status, fetchProjeto]);
 
-  const handleCriteriosChange = (alunoId: string, criterios: string) => {
-    setAvaliacoes((prev) => ({
-      ...prev,
-      [alunoId]: { ...prev[alunoId], criterios },
-    }));
-  };
+  // ─── Handlers ─────────────────────────────────────────────────────────────
+  const handleNotaChange = (alunoId: string, nota: number) =>
+    setAvaliacoes((prev) => ({ ...prev, [alunoId]: { ...prev[alunoId], nota } }));
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleCriteriosChange = (alunoId: string, criterios: string) =>
+    setAvaliacoes((prev) => ({ ...prev, [alunoId]: { ...prev[alunoId], criterios } }));
+
+  // ─── Salvar ───────────────────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (alunos.length === 0) {
+      toast.error('Nenhum aluno para avaliar neste projeto.');
+      return;
+    }
     setSubmitting(true);
-    setMessage(null);
-
     try {
-      // Prepare data for submission
-      const submissionData = Object.entries(avaliacoes).map(([aluno_id, data]) => {
-        const val = data as AvaliacaoState;
-        return {
-          projeto_id: params.id as string,
-          aluno_id,
-          nota: val.nota,
-          criterios: val.criterios,
-        };
-      });
-
-      // Log data before fetch as requested
-      console.log("Submitting evaluation data:", submissionData);
-
-      // Submit each evaluation (or batch if API supports it)
-      // For simplicity, we'll submit them sequentially or use a batch endpoint if available
-      // Here we assume the API handles one at a time or we can loop
-      for (const item of submissionData) {
-        const res = await fetch("/api/avaliacoes-alunos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(item),
+      for (const aluno of alunos) {
+        const av = avaliacoes[aluno.id];
+        if (!av) continue;
+        const res = await fetch('/api/avaliacoes-alunos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projeto_id: params.id,
+            aluno_id: aluno.id,
+            nota: av.nota,
+            criterios: av.criterios,
+          }),
         });
-
         if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.error || "Erro ao salvar avaliação.");
+          const err = await res.json();
+          throw new Error(err.error || 'Erro ao salvar avaliação.');
         }
       }
-
-      setMessage({ type: "success", text: "Avaliações salvas com sucesso!" });
-      setTimeout(() => setMessage(null), 3000);
-    } catch (error: any) {
-      console.error("Submission error:", error);
-      setMessage({ type: "error", text: error.message || "Ocorreu um erro ao salvar as avaliações." });
+      toast.success('Avaliações salvas com sucesso!');
+      router.push('/professor');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao salvar avaliações.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
+  // ─── Loading / erro ───────────────────────────────────────────────────────
+  if (loading || status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loading />
       </div>
     );
   }
 
+  if (!projeto) return null;
+
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+
+        {/* Cabeçalho */}
         <div>
           <button
-            onClick={() => router.back()}
-            className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-2"
+            onClick={() => router.push('/professor')}
+            className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400
+                       hover:text-primary-700 dark:hover:text-primary-400 transition-colors mb-4"
           >
-            <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+            <ArrowLeft className="w-4 h-4" />
+            Voltar aos projetos
           </button>
-          <h1 className="text-3xl font-bold tracking-tight">{projeto?.titulo || "Avaliação de Projeto"}</h1>
-          <p className="text-muted-foreground">Avalie os alunos participantes deste projeto.</p>
-        </div>
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
-        >
-          {submitting ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4 mr-2" />
-          )}
-          Salvar Avaliações
-        </button>
-      </div>
 
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-4 rounded-lg mb-6 flex items-center ${
-            message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-          }`}
-        >
-          {message.type === "success" ? (
-            <CheckCircle2 className="w-5 h-5 mr-2" />
-          ) : (
-            <AlertCircle className="w-5 h-5 mr-2" />
-          )}
-          {message.text}
-        </motion.div>
-      )}
-
-      <div className="space-y-6">
-        {alunos.map((aluno) => (
-          <div key={aluno.id} className="bg-card border rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">{aluno.nome}</h3>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">Nota:</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={avaliacoes[aluno.id]?.nota || 0}
-                  onChange={(e) => handleNotaChange(aluno.id, parseFloat(e.target.value))}
-                  className="w-20 px-2 py-1 border rounded bg-background"
-                />
-              </div>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Critérios / Observações:</label>
-              <textarea
-                value={avaliacoes[aluno.id]?.criterios || ""}
-                onChange={(e) => handleCriteriosChange(aluno.id, e.target.value)}
-                placeholder="Descreva os critérios de avaliação..."
-                className="w-full h-24 px-3 py-2 border rounded bg-background resize-none"
-              />
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                {projeto.titulo}
+              </h1>
+              {projeto.equipe && (
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5" />
+                  {projeto.equipe.nome}
+                </p>
+              )}
+              {projeto.descricao && (
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  {projeto.descricao}
+                </p>
+              )}
+            </div>
+            <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+              Criado em {formatDate(projeto.created_at)}
+            </span>
+          </div>
+        </div>
+
+        {/* Arquivos do projeto */}
+        {projeto.arquivos && projeto.arquivos.length > 0 && (
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">
+              Arquivos do projeto
+            </p>
+            <div className="space-y-2">
+              {projeto.arquivos.map((arq) => (
+                <a
+                  key={arq.id}
+                  href={arq.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-primary-700 dark:text-primary-400
+                             hover:underline transition-colors"
+                >
+                  <FileText className="w-4 h-4 shrink-0" />
+                  {arq.nome_arquivo}
+                </a>
+              ))}
             </div>
           </div>
-        ))}
+        )}
+
+        {/* Sem alunos */}
+        {alunos.length === 0 ? (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200
+                          dark:border-yellow-800/40 rounded-xl p-6 text-center">
+            <AlertCircle className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+              Este projeto não possui equipe ou alunos cadastrados.
+            </p>
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+              Peça ao administrador para vincular uma equipe ao projeto.
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Avalie cada aluno ({alunos.length})
+            </p>
+
+            <div className="space-y-4">
+              {alunos.map((aluno) => (
+                <div
+                  key={aluno.id}
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200
+                             dark:border-slate-700 p-5 shadow-sm space-y-4"
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                      {aluno.nome}
+                    </h3>
+                    <NotaInput
+                      alunoId={aluno.id}
+                      nota={avaliacoes[aluno.id]?.nota ?? 0}
+                      onChange={handleNotaChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Critérios / Observações
+                    </label>
+                    <textarea
+                      value={avaliacoes[aluno.id]?.criterios ?? ''}
+                      onChange={(e) => handleCriteriosChange(aluno.id, e.target.value)}
+                      placeholder="Pontos fortes, melhorias sugeridas..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg
+                                 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                                 placeholder:text-gray-400 dark:placeholder:text-slate-500 resize-none
+                                 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-sm
+                           bg-primary-800 dark:bg-primary-600 text-white
+                           hover:bg-primary-700 dark:hover:bg-primary-500
+                           disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {submitting
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <Save className="w-4 h-4" />}
+                {submitting ? 'Salvando...' : 'Salvar Avaliações'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
