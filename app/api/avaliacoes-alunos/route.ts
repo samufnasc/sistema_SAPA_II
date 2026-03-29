@@ -13,9 +13,6 @@ import { supabaseAdmin } from '@/lib/supabase';
  * POST /api/avaliacoes-alunos
  *   Body: { projeto_id, aluno_id, criterios, comentario }
  *   Faz upsert pela tripla (projeto_id, aluno_id, professor_id)
- *
- * NOTA: getServerSession importado de 'next-auth/next' (não 'next-auth')
- * para funcionar corretamente no App Router da Vercel.
  */
 
 // ─── GET ─────────────────────────────────────────────────────────────────────
@@ -44,6 +41,17 @@ export async function GET(req: NextRequest) {
   if (alunoId)     query = query.eq('aluno_id', alunoId);
   if (professorId) query = query.eq('professor_id', professorId);
 
+  // Professor só vê as próprias avaliações (a menos que já filtre por professor_id)
+  if (session.user.role === 'professor' && !professorId) {
+    const { data: prof } = await supabaseAdmin
+      .from('professores')
+      .select('id')
+      .eq('email', session.user.email ?? '')
+      .single();
+
+    if (prof) query = query.eq('professor_id', prof.id);
+  }
+
   const { data, error } = await query;
 
   if (error) {
@@ -66,8 +74,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (session.user.role !== 'professor') {
-    console.error('[avaliacoes-alunos POST] Role inválida:', session.user.role);
+  if (session.user.role !== 'professor' && session.user.role !== 'admin') {
     return NextResponse.json(
       { error: 'Apenas professores podem enviar avaliações.' },
       { status: 403 }
@@ -96,15 +103,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── 3. Busca professor pelo user_id da sessão ──────────────────────────────
+  // ── 3. Busca professor pelo email da sessão ────────────────────────────────
   const { data: professor, error: profError } = await supabaseAdmin
     .from('professores')
     .select('id')
-    .eq('user_id', session.user.id)
+    .eq('email', session.user.email ?? '')
     .single();
 
   if (profError || !professor) {
-    console.error('[avaliacoes-alunos POST] Professor não encontrado para user_id:', session.user.id, profError);
+    console.error('[avaliacoes-alunos POST] Professor não encontrado para email:', session.user.email, profError);
     return NextResponse.json(
       { error: 'Professor não encontrado. Verifique o vínculo entre usuário e professor.' },
       { status: 404 }
@@ -125,19 +132,19 @@ export async function POST(req: NextRequest) {
       .toFixed(2)
   );
 
-  // ── 5. Payload: colunas individuais DECIMAL(3,1) + JSONB criterios + nota ──
+  // ── 5. Payload com colunas individuais + JSONB + nota média ───────────────
   const payload = {
     nota_conteudo:     crit.conteudo,
     nota_apresentacao: crit.apresentacao,
     nota_inovacao:     crit.inovacao,
     nota_metodologia:  crit.metodologia,
     nota_resultados:   crit.resultados,
-    criterios:         crit,
+    criterios:         crit,     // espelho JSONB para leitura rápida
     nota,
     comentario: comentario ?? null,
   };
 
-  // ── 6. Upsert: atualiza ou cria ────────────────────────────────────────────
+  // ── 6. Upsert: atualiza se já existe, insere se não ───────────────────────
   const { data: existing } = await supabaseAdmin
     .from('avaliacao_alunos')
     .select('id')

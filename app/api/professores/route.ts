@@ -5,13 +5,31 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { hashPassword } from '@/lib/auth';
 
 // ─── GET /api/professores ────────────────────────────────────────────────────
-// Lista todos os professores (apenas admin)
+// Admin → lista todos os professores
+// Professor → retorna apenas seus próprios dados (para o Header e página de avaliação)
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
 
+  // Professor só pode ver a si mesmo
+  if (session.user.role === 'professor') {
+    const { data, error } = await supabaseAdmin
+      .from('professores')
+      .select('*')
+      .eq('email', session.user.email ?? '')
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({ error: 'Professor não encontrado.' }, { status: 404 });
+    }
+
+    // Retorna array com um item para manter compatibilidade com o frontend
+    return NextResponse.json([data]);
+  }
+
+  // Admin → lista todos com filtro de busca
   const { searchParams } = new URL(req.url);
   const search = searchParams.get('search') ?? '';
 

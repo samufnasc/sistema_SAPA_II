@@ -14,16 +14,21 @@ export async function GET(req: NextRequest) {
     supabaseAdmin.from('professores').select('id', { count: 'exact', head: true }),
     supabaseAdmin.from('equipes').select('id', { count: 'exact', head: true }),
     supabaseAdmin.from('alunos').select('id', { count: 'exact', head: true }),
-    supabaseAdmin.from('projetos').select('id, titulo, created_at, equipe:equipes(nome)', { count: 'exact' }).order('created_at', { ascending: false }).limit(5),
-    supabaseAdmin.from('avaliacoes').select('id', { count: 'exact', head: true }),
+    supabaseAdmin
+      .from('projetos')
+      .select('id, titulo, created_at, equipe:equipes(nome)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(5),
+    // ← CORRIGIDO: usa a tabela nova avaliacao_alunos (não a antiga `avaliacoes`)
+    supabaseAdmin.from('avaliacao_alunos').select('id', { count: 'exact', head: true }),
   ]);
 
   return NextResponse.json({
     totalProfessores: professores.count ?? 0,
-    totalEquipes: equipes.count ?? 0,
-    totalAlunos: alunos.count ?? 0,
-    totalProjetos: projetos.count ?? 0,
-    totalAvaliacoes: avaliacoes.count ?? 0,
-    ultimosProjetos: projetos.data ?? [],
+    totalEquipes:     equipes.count     ?? 0,
+    totalAlunos:      alunos.count      ?? 0,
+    totalProjetos:    projetos.count    ?? 0,
+    totalAvaliacoes:  avaliacoes.count  ?? 0,
+    ultimosProjetos:  projetos.data     ?? [],
   });
 }
