@@ -1,22 +1,42 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from './supabase';
 
-// Cliente interno usado apenas no servidor (não exportar para o cliente)
-const supabaseServer = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Extensão dos tipos do NextAuth para incluir 'role'
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      role: 'admin' | 'professor';
+    };
+  }
 
-// ─── Utilitário de hash (usado na criação de professores) ─────────────────────
-export const hashPassword = async (password: string): Promise<string> => {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(password, salt);
-};
+  interface User {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    role: 'admin' | 'professor';
+  }
+}
 
-// ─── Configuração do NextAuth ─────────────────────────────────────────────────
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id: string;
+    role: 'admin' | 'professor';
+  }
+}
+
 export const authOptions: NextAuthOptions = {
+  // Usa JWT para sessão (sem banco NextAuth, sessão em cookie assinado)
+  session: {
+    strategy: 'jwt',
+    maxAge: 8 * 60 * 60, // 8 horas
+  },
+
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -24,28 +44,33 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'E-mail', type: 'email' },
         password: { label: 'Senha', type: 'password' },
       },
+
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error('E-mail e senha são obrigatórios.');
+        }
 
-        const email = credentials.email.toLowerCase().trim();
-
-        // Busca o usuário na tabela `users` pelo e-mail
-        const { data: user, error } = await supabaseServer
+        // Busca o usuário pelo e-mail no Supabase
+        const { data: user, error } = await supabaseAdmin
           .from('users')
           .select('id, email, password_hash, nome, role')
-          .eq('email', email)
+          .eq('email', credentials.email.toLowerCase())
           .single();
 
-        if (error || !user) return null;
+        if (error || !user) {
+          throw new Error('Usuário não encontrado.');
+        }
 
         // Verifica a senha
-        const senhaCorreta = await bcrypt.compare(
+        const isValid = await bcrypt.compare(
           credentials.password,
           user.password_hash
         );
-        if (!senhaCorreta) return null;
 
-        // Retorna o objeto de usuário que vai para o token JWT
+        if (!isValid) {
+          throw new Error('Senha incorreta.');
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -56,34 +81,43 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  session: {
-    strategy: 'jwt',
-    // Sessão expira em 8 horas
-    maxAge: 8 * 60 * 60,
-  },
-
-  pages: {
-    // Redireciona para a página raiz (onde está o formulário de login)
-    signIn: '/',
-  },
-
   callbacks: {
+    // Persiste id e role no JWT
     async jwt({ token, user }) {
-      // Na primeira autenticação, `user` existe — persiste id e role no token
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
+        token.role = user.role;
       }
       return token;
     },
 
+    // Expõe id e role na sessão do cliente
     async session({ session, token }) {
-      // Expõe id e role na sessão do cliente
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+      if (token) {
+        session.user.id = token.id;
+        session.user.role = token.role;
       }
       return session;
     },
   },
+
+  pages: {
+    signIn: '/',         // Página de login customizada
+    error: '/',          // Erros de auth vão para home
+  },
+
+  secret: process.env.NEXTAUTH_SECRET,
+
+  /**
+   * CRÍTICO para Vercel / produção HTTPS:
+   * Sem trustHost: true, o NextAuth rejeita o host da Vercel e
+   * getServerSession() retorna null → todas as rotas protegidas retornam 401.
+   *
+   * Referência: https://next-auth.js.org/configuration/options#trusthost
+   */
 };
+
+// ─── Utilitário: hash de senha ─────────────────────────────────────────────
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 12);
+}

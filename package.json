@@ -13,7 +13,6 @@
     "@supabase/supabase-js": "^2.44.3",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.38.0",
     "lucide-react": "^0.396.0",
     "next": "14.2.5",
     "next-auth": "^4.24.7",
