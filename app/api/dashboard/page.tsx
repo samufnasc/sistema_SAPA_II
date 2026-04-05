@@ -8,7 +8,7 @@ import {
   UserCheck, TrendingUp, Star, BarChart2, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { formatDate, getInitials } from '@/lib/utils';
-import Link from 'next/link';
+import Link from 'next/link'; 
 import Image from 'next/image';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
