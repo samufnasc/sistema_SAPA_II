@@ -4,18 +4,22 @@ import { authOptions } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
-interface AvaliacaoRaw {
-  nota: number;
-  nota_conteudo: number | null;
-  nota_apresentacao: number | null;
-  nota_inovacao: number | null;
-  nota_metodologia: number | null;
-  nota_resultados: number | null;
-  projeto_id: string;
-  professor_id: string;
-  projeto: { id: string; titulo: string } | null;
-  professor: { id: string; nome: string; email: string; foto_url?: string } | null;
+// O Supabase retorna joins como arrays mesmo em relações 1-para-1.
+// projeto e professor podem vir como array OU objeto direto dependendo da versão
+// do cliente. Usamos any aqui e normalizamos com a função abaixo.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AvaliacaoRaw = Record<string, any>;
+
+// Normaliza join que pode vir como array ou objeto direto — retorna o primeiro item
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function norm<T>(val: any): T | null {
+  if (!val) return null;
+  if (Array.isArray(val)) return (val[0] as T) ?? null;
+  return val as T;
 }
+
+type ProjJoin    = { id: string; titulo: string };
+type ProfJoin    = { id: string; nome: string; email: string; foto_url?: string };
 
 // Utilitário de média
 const avg = (arr: number[]) =>
@@ -58,10 +62,14 @@ export async function GET(req: NextRequest) {
         .order('created_at', { ascending: false }),
     ]);
 
-  const avaliacoes = (avaliacoesRes.data ?? []) as AvaliacaoRaw[];
+  // Usa any → AvaliacaoRaw para evitar conflito com tipos gerados pelo Supabase
+  const avaliacoes: AvaliacaoRaw[] = (avaliacoesRes.data ?? []) as AvaliacaoRaw[];
 
   // ─── Médias por projeto ──────────────────────────────────────────────────
-  type EixoAcum = { conteudo: number[]; apresentacao: number[]; inovacao: number[]; metodologia: number[]; resultados: number[] };
+  type EixoAcum = {
+    conteudo: number[]; apresentacao: number[];
+    inovacao: number[]; metodologia: number[]; resultados: number[];
+  };
 
   const projetoMap = new Map<string, {
     id: string; titulo: string; notas: number[];
@@ -69,23 +77,26 @@ export async function GET(req: NextRequest) {
   }>();
 
   for (const av of avaliacoes) {
-    if (!projetoMap.has(av.projeto_id)) {
-      projetoMap.set(av.projeto_id, {
-        id: av.projeto_id,
-        titulo: av.projeto?.titulo ?? '—',
+    const projeto = norm<ProjJoin>(av.projeto);
+    const pid: string = av.projeto_id;
+
+    if (!projetoMap.has(pid)) {
+      projetoMap.set(pid, {
+        id: pid,
+        titulo: projeto?.titulo ?? '—',
         notas: [],
         eixos: { conteudo: [], apresentacao: [], inovacao: [], metodologia: [], resultados: [] },
         totalAvaliacoes: 0,
       });
     }
-    const p = projetoMap.get(av.projeto_id)!;
-    p.notas.push(av.nota);
+    const p = projetoMap.get(pid)!;
+    p.notas.push(Number(av.nota));
     p.totalAvaliacoes += 1;
-    if (av.nota_conteudo     != null) p.eixos.conteudo.push(av.nota_conteudo);
-    if (av.nota_apresentacao != null) p.eixos.apresentacao.push(av.nota_apresentacao);
-    if (av.nota_inovacao     != null) p.eixos.inovacao.push(av.nota_inovacao);
-    if (av.nota_metodologia  != null) p.eixos.metodologia.push(av.nota_metodologia);
-    if (av.nota_resultados   != null) p.eixos.resultados.push(av.nota_resultados);
+    if (av.nota_conteudo     != null) p.eixos.conteudo.push(Number(av.nota_conteudo));
+    if (av.nota_apresentacao != null) p.eixos.apresentacao.push(Number(av.nota_apresentacao));
+    if (av.nota_inovacao     != null) p.eixos.inovacao.push(Number(av.nota_inovacao));
+    if (av.nota_metodologia  != null) p.eixos.metodologia.push(Number(av.nota_metodologia));
+    if (av.nota_resultados   != null) p.eixos.resultados.push(Number(av.nota_resultados));
   }
 
   const mediasPorProjeto = Array.from(projetoMap.values())
@@ -111,25 +122,28 @@ export async function GET(req: NextRequest) {
   }>();
 
   for (const av of avaliacoes) {
-    if (!professorMap.has(av.professor_id)) {
-      professorMap.set(av.professor_id, {
-        id: av.professor_id,
-        nome: av.professor?.nome ?? '—',
-        email: av.professor?.email ?? '',
-        foto_url: av.professor?.foto_url,
+    const professor = norm<ProfJoin>(av.professor);
+    const profId: string = av.professor_id;
+
+    if (!professorMap.has(profId)) {
+      professorMap.set(profId, {
+        id: profId,
+        nome: professor?.nome ?? '—',
+        email: professor?.email ?? '',
+        foto_url: professor?.foto_url,
         notas: [],
         eixos: { conteudo: [], apresentacao: [], inovacao: [], metodologia: [], resultados: [] },
         projetosAvaliados: new Set(),
       });
     }
-    const p = professorMap.get(av.professor_id)!;
-    p.notas.push(av.nota);
+    const p = professorMap.get(profId)!;
+    p.notas.push(Number(av.nota));
     p.projetosAvaliados.add(av.projeto_id);
-    if (av.nota_conteudo     != null) p.eixos.conteudo.push(av.nota_conteudo);
-    if (av.nota_apresentacao != null) p.eixos.apresentacao.push(av.nota_apresentacao);
-    if (av.nota_inovacao     != null) p.eixos.inovacao.push(av.nota_inovacao);
-    if (av.nota_metodologia  != null) p.eixos.metodologia.push(av.nota_metodologia);
-    if (av.nota_resultados   != null) p.eixos.resultados.push(av.nota_resultados);
+    if (av.nota_conteudo     != null) p.eixos.conteudo.push(Number(av.nota_conteudo));
+    if (av.nota_apresentacao != null) p.eixos.apresentacao.push(Number(av.nota_apresentacao));
+    if (av.nota_inovacao     != null) p.eixos.inovacao.push(Number(av.nota_inovacao));
+    if (av.nota_metodologia  != null) p.eixos.metodologia.push(Number(av.nota_metodologia));
+    if (av.nota_resultados   != null) p.eixos.resultados.push(Number(av.nota_resultados));
   }
 
   const mediasPorProfessor = Array.from(professorMap.values())
@@ -152,17 +166,17 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => b.totalAvaliacoes - a.totalAvaliacoes);
 
   // ─── Nota global ─────────────────────────────────────────────────────────
-  const mediaGlobal = avg(avaliacoes.map((a) => a.nota));
+  const mediaGlobal = avg(avaliacoes.map((a) => Number(a.nota)));
 
   return NextResponse.json({
-    // Contadores existentes (sem quebrar compatibilidade)
+    // Contadores existentes — sem quebrar compatibilidade
     totalProfessores: professoresRes.count ?? 0,
     totalEquipes:     equipesRes.count     ?? 0,
     totalAlunos:      alunosRes.count      ?? 0,
     totalProjetos:    projetosRes.count    ?? 0,
     totalAvaliacoes:  avaliacoes.length,
     ultimosProjetos:  projetosRes.data     ?? [],
-    // ── Inteligência de dados — campos novos ──────────────────────────────
+    // Inteligência de dados — campos novos
     mediaGlobal,
     mediasPorProjeto,
     mediasPorProfessor,
