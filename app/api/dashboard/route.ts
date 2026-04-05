@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
     mediaGeral: number; eixos: ReturnType<typeof calcEixos>;
   }>> = {};
 
-  for (const item of alunoProjetoMap.values()) {
+  Array.from(alunoProjetoMap.values()).forEach((item) => {
     if (!drillDownPorProjeto[item.projetoId]) {
       drillDownPorProjeto[item.projetoId] = [];
     }
@@ -172,7 +172,7 @@ export async function GET(req: NextRequest) {
       mediaGeral: avg(item.notas),
       eixos: calcEixos(item.eixos),
     });
-  }
+  });
 
   // Ordena alunos de cada projeto por média decrescente
   for (const pid of Object.keys(drillDownPorProjeto)) {
